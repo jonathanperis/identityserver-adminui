@@ -1,0 +1,62 @@
+﻿@page "/counter"
+@inject ITokenService TokenService
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+<button class="btn btn-secondary" @onclick="CallWeatherApi">Call WeatherApi</button>
+
+@if (List is not null)
+{
+    <h2>Weather</h2>
+    <table>
+        @foreach (var item in List)
+        {
+            <tr>
+                <td>@item.Date</td>
+                <td>@item.Summary</td>
+                <td>@item.TemperatureF</td>
+                <td>@item.TemperatureC</td>
+            </tr>
+        }
+    </table>
+}
+
+@code {
+    private int currentCount = 0;
+    private List<WeatherData>? List { get; set; }
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+    private async void CallWeatherApi()
+    {
+        using var client = new HttpClient();
+
+        var token = await TokenService.GetToken("weatherapi.read"); //this is using m2m client due limitations on blazor to retrieve the access token from incomming call.
+        //var token = await HttpContext.GetTokenAsync("access_token");
+        
+        client.SetBearerToken(token.AccessToken);
+        //client.SetBearerToken(token);
+
+        var result = await client.GetAsync("https://localhost:5445/weatherforecast");
+
+        if (result.IsSuccessStatusCode)
+        {
+            var model = await result.Content.ReadAsStringAsync();
+            List = JsonConvert.DeserializeObject<List<WeatherData>>(model);
+            StateHasChanged();
+            return;
+        }
+
+        throw new Exception("Unable to get content");
+    }
+}
