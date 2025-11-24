@@ -93,7 +93,16 @@ if (args.Contains("/seed"))
 {
     Log.Information("Seeding database ...");
     SeedData.EnsureSeedData(app);
-    Log.Information("Done seeding database. Exiting.");
+    Log.Information("Done seeding database.");
+    
+    if (args.Contains("/seedproviders"))
+    {
+        Log.Information("Seeding dynamic providers ...");
+        DynamicProviderSeedData.EnsureSeedData(app);
+        Log.Information("Done seeding dynamic providers.");
+    }
+    
+    Log.Information("Exiting.");
     return;
 }
 
