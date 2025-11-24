@@ -1,7 +1,11 @@
 using IdentityServer;
+using IdentityServer.Configuration;
 using IdentityServer.Database;
+using IdentityServer.Services;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
@@ -19,6 +23,7 @@ var connectionString = configuration.GetConnectionString("DefaultConnection");
 var migrationsAssembly = typeof(Config).Assembly.GetName().Name;
 
 builder.Services.AddRazorPages();
+builder.Services.AddControllers();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -28,6 +33,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
   .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Register dynamic provider services
+builder.Services.AddScoped<IDynamicProviderService, DynamicProviderService>();
+builder.Services.AddScoped<DynamicAuthenticationSchemeService>();
+
+// Register dynamic OIDC options configuration
+builder.Services.AddSingleton<IConfigureOptions<OpenIdConnectOptions>, DynamicOidcOptionsConfiguration>();
 
 builder.Services.AddIdentityServer(options =>
 {
@@ -48,7 +60,12 @@ builder.Services.AddIdentityServer(options =>
   .AddAspNetIdentity<IdentityUser>();
   //.AddTestUsers(Config.Users);
 
-builder.Services.AddAuthentication();
+// Configure authentication with support for dynamic providers
+var authBuilder = builder.Services.AddAuthentication();
+
+// Dynamic OIDC providers will be registered on-demand through DynamicOidcOptionsConfiguration
+// We need to register OpenIdConnect authentication scheme factory
+authBuilder.AddOpenIdConnect("dynamic-oidc", options => { });
 
 builder.Services.AddSerilog((ctx, lc) =>
 {
@@ -67,8 +84,10 @@ app.UseIdentityServer();
 
 app.UseStaticFiles();
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages().RequireAuthorization();
+app.MapControllers();
 
 if (args.Contains("/seed"))
 {

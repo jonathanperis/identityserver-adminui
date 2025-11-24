@@ -7,6 +7,7 @@ using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Duende.IdentityServer.Stores;
 using Duende.IdentityServer.Test;
+using IdentityServer.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -24,6 +25,7 @@ public class Index : PageModel
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly IAuthenticationSchemeProvider _schemeProvider;
     private readonly IIdentityProviderStore _identityProviderStore;
+    private readonly DynamicAuthenticationSchemeService _dynamicSchemeService;
 
     public ViewModel View { get; set; } = default!;
 
@@ -35,13 +37,15 @@ public class Index : PageModel
         IAuthenticationSchemeProvider schemeProvider,
         IIdentityProviderStore identityProviderStore,
         IEventService events,
-        SignInManager<IdentityUser> signInManager)
+        SignInManager<IdentityUser> signInManager,
+        DynamicAuthenticationSchemeService dynamicSchemeService)
     {           
         _interaction = interaction;
         _schemeProvider = schemeProvider;
         _identityProviderStore = identityProviderStore;
         _events = events;
         _signInManager = signInManager;
+        _dynamicSchemeService = dynamicSchemeService;
     }
 
     public async Task<IActionResult> OnGet(string? returnUrl)
@@ -208,6 +212,24 @@ public class Index : PageModel
                 displayName: x.DisplayName ?? x.Scheme
             ));
         providers.AddRange(dynamicSchemes);
+
+        // Load custom dynamic OIDC providers
+        var oidcProviders = await _dynamicSchemeService.GetEnabledOidcProvidersAsync();
+        var oidcExternalProviders = oidcProviders.Select(p => new ViewModel.ExternalProvider
+        (
+            authenticationScheme: p.Scheme,
+            displayName: p.DisplayName
+        ));
+        providers.AddRange(oidcExternalProviders);
+
+        // Load custom dynamic SAML providers
+        var samlProviders = await _dynamicSchemeService.GetEnabledSamlProvidersAsync();
+        var samlExternalProviders = samlProviders.Select(p => new ViewModel.ExternalProvider
+        (
+            authenticationScheme: p.Scheme,
+            displayName: p.DisplayName
+        ));
+        providers.AddRange(samlExternalProviders);
 
 
         var allowLocal = true;
