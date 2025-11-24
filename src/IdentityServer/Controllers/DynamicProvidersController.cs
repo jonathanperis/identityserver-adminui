@@ -106,15 +106,18 @@ public class DynamicProvidersController : ControllerBase
     {
         try
         {
+            // We need to fetch the provider first to get the scheme for cache invalidation
+            // FindAsync is very fast (uses primary key) and necessary for proper cleanup
             var provider = await _providerService.GetOidcProviderAsync(id);
             if (provider == null)
             {
                 return NotFound();
             }
 
+            var scheme = provider.Scheme; // Cache scheme before deletion
             await _providerService.DeleteOidcProviderAsync(id);
-            _schemeService.ClearOptionsCache(provider.Scheme);
-            _logger.LogInformation("Deleted OIDC provider {Scheme}", provider.Scheme);
+            _schemeService.ClearOptionsCache(scheme);
+            _logger.LogInformation("Deleted OIDC provider {Scheme}", scheme);
             return NoContent();
         }
         catch (Exception ex)
@@ -188,14 +191,17 @@ public class DynamicProvidersController : ControllerBase
     {
         try
         {
+            // We need to fetch the provider first to get the scheme for logging
+            // FindAsync is very fast (uses primary key) and necessary for proper cleanup
             var provider = await _providerService.GetSamlProviderAsync(id);
             if (provider == null)
             {
                 return NotFound();
             }
 
+            var scheme = provider.Scheme; // Cache scheme before deletion
             await _providerService.DeleteSamlProviderAsync(id);
-            _logger.LogInformation("Deleted SAML provider {Scheme}", provider.Scheme);
+            _logger.LogInformation("Deleted SAML provider {Scheme}", scheme);
             return NoContent();
         }
         catch (Exception ex)

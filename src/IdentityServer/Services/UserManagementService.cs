@@ -21,7 +21,9 @@ public class UserManagementService : IUserManagementService
 
     public async Task<IEnumerable<ApplicationUser>> GetAllUsersAsync()
     {
-        return await _context.Users.ToListAsync();
+        return await _context.Users
+            .AsNoTracking()
+            .ToListAsync();
     }
 
     public async Task<ApplicationUser?> GetUserByIdAsync(string userId)
@@ -42,6 +44,7 @@ public class UserManagementService : IUserManagementService
     public async Task<IEnumerable<ApplicationUser>> GetActiveUsersAsync()
     {
         return await _context.Users
+            .AsNoTracking()
             .Where(u => u.IsActive)
             .ToListAsync();
     }
@@ -49,6 +52,7 @@ public class UserManagementService : IUserManagementService
     public async Task<IEnumerable<ApplicationUser>> GetInactiveUsersAsync()
     {
         return await _context.Users
+            .AsNoTracking()
             .Where(u => !u.IsActive)
             .ToListAsync();
     }
@@ -56,6 +60,7 @@ public class UserManagementService : IUserManagementService
     public async Task<IEnumerable<ApplicationUser>> GetUsersByCompanyAsync(string company)
     {
         return await _context.Users
+            .AsNoTracking()
             .Where(u => u.Company == company && u.IsActive)
             .ToListAsync();
     }

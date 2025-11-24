@@ -1,5 +1,7 @@
+using IdentityServer.Database;
 using IdentityServer.Services;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace IdentityServer.Configuration;
@@ -28,9 +30,13 @@ public class DynamicOidcOptionsConfiguration : IConfigureNamedOptions<OpenIdConn
         }
 
         using var scope = _serviceProvider.CreateScope();
-        var schemeService = scope.ServiceProvider.GetRequiredService<DynamicAuthenticationSchemeService>();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var provider = schemeService.GetOidcProviderConfigurationAsync(name).GetAwaiter().GetResult();
+        // Use synchronous query to avoid blocking async code
+        // This is acceptable here because IConfigureNamedOptions.Configure is synchronous by design
+        var provider = context.OidcProviders
+            .AsNoTracking()
+            .FirstOrDefault(p => p.Scheme == name && p.Enabled);
 
         if (provider == null)
         {

@@ -35,6 +35,7 @@ public class DynamicAuthenticationSchemeService
     public async Task<IEnumerable<AuthenticationScheme>> LoadOidcSchemesAsync()
     {
         var providers = await _context.OidcProviders
+            .AsNoTracking()
             .Where(p => p.Enabled)
             .ToListAsync();
 
@@ -69,6 +70,7 @@ public class DynamicAuthenticationSchemeService
     public async Task<OidcProvider?> GetOidcProviderConfigurationAsync(string scheme)
     {
         return await _context.OidcProviders
+            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Scheme == scheme && p.Enabled);
     }
 
@@ -78,6 +80,7 @@ public class DynamicAuthenticationSchemeService
     public async Task<IEnumerable<OidcProvider>> GetEnabledOidcProvidersAsync()
     {
         return await _context.OidcProviders
+            .AsNoTracking()
             .Where(p => p.Enabled)
             .ToListAsync();
     }
@@ -88,6 +91,7 @@ public class DynamicAuthenticationSchemeService
     public async Task<IEnumerable<SamlProvider>> GetEnabledSamlProvidersAsync()
     {
         return await _context.SamlProviders
+            .AsNoTracking()
             .Where(p => p.Enabled)
             .ToListAsync();
     }
