@@ -139,8 +139,10 @@ public class DynamicProviderService : IDynamicProviderService
             .Where(p => p.Enabled)
             .ToListAsync();
 
+        // Wait for both queries to complete in parallel
         await Task.WhenAll(oidcTask, samlTask);
 
+        // Access results directly - tasks are already completed
         return oidcTask.Result.Cast<DynamicProvider>()
             .Concat(samlTask.Result.Cast<DynamicProvider>())
             .OrderBy(p => p.DisplayName);

@@ -130,26 +130,39 @@ var samlTask = _context.SamlProviders
     .ToListAsync();
 
 await Task.WhenAll(oidcTask, samlTask);
+
+// Access results directly - tasks are already completed
+return oidcTask.Result.Cast<DynamicProvider>()
+    .Concat(samlTask.Result.Cast<DynamicProvider>())
+    .OrderBy(p => p.DisplayName);
 ```
 
 **Benefits**:
 - Executes both queries in parallel, reducing total time to the longest query instead of the sum
 - Adds `AsNoTracking()` for read-only data
+- Uses `.Result` property after `Task.WhenAll` for zero-overhead result access (tasks are already completed)
 - Can improve performance by up to 50% when both tables have similar query times
 
-### 5. Updated Controller Error Handling
+### 5. Updated Controller Error Handling and Delete Workflow
 
 **File**: `src/IdentityServer/Controllers/DynamicProvidersController.cs`
 
 **Changes**:
-- Updated `DeleteOidcProvider()` and `DeleteSamlProvider()` to handle the new exception-based approach
-- Added explicit handling for `InvalidOperationException` to return proper 404 responses
-- Cached scheme name before deletion to ensure proper cache cleanup
+- Updated `DeleteOidcProvider()` and `DeleteSamlProvider()` to fetch provider first for scheme/logging
+- Added comments explaining why pre-fetch is necessary (cache invalidation and proper logging)
+- Simplified exception handling
+- Optimized delete still uses `ExecuteDelete` for the actual deletion
+
+**Note**: While this approach does use two database calls (FindAsync + ExecuteDelete), FindAsync is extremely fast due to:
+- Primary key lookup (fastest possible query)
+- Entity Framework's local cache check
+- Necessary for proper cache cleanup and logging
 
 **Benefits**:
 - Maintains proper HTTP semantics
-- Ensures cache is properly cleared even with optimized delete operations
-- Better error handling and logging
+- Ensures cache is properly cleared with correct scheme
+- Better error handling and logging with proper scheme information
+- FindAsync is fast enough that the overhead is minimal compared to the ExecuteDelete optimization
 
 ## Performance Impact
 
