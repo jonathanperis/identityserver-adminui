@@ -6,6 +6,7 @@ using Duende.IdentityServer;
 using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Services;
 using Duende.IdentityServer.Test;
+using IdentityServer.Models.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -21,14 +22,14 @@ public class Callback : PageModel
 {
     private readonly IIdentityServerInteractionService _interaction;
     private readonly ILogger<Callback> _logger;
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly IEventService _events;
 
     public Callback(
         IIdentityServerInteractionService interaction,
         IEventService events,
         ILogger<Callback> logger,
-        UserManager<IdentityUser> userManager)
+        UserManager<ApplicationUser> userManager)
     {
         _interaction = interaction;
         _logger = logger;
@@ -77,10 +78,33 @@ public class Callback : PageModel
             var claims = externalUser.Claims.ToList();
             claims.Remove(userIdClaim);
 
-            user = new IdentityUser(Guid.NewGuid().ToString());
+            // Extract name information from external provider
+            var nameClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Name)?.Value;
+            var givenNameClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.GivenName)?.Value;
+            var familyNameClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.FamilyName)?.Value;
+            var emailClaim = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Email)?.Value;
+
+            user = new ApplicationUser
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserName = emailClaim ?? providerUserId,
+                Email = emailClaim,
+                EmailConfirmed = true,
+                FirstName = givenNameClaim,
+                LastName = familyNameClaim,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                LastLoginAt = DateTime.UtcNow
+            };
             await _userManager.CreateAsync(user);
 
             await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerUserId, provider));
+        }
+        else
+        {
+            // Update last login for existing user
+            user.LastLoginAt = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
         }
 
         // this allows us to collect any additional claims or properties
@@ -93,7 +117,7 @@ public class Callback : PageModel
         // issue authentication cookie for user
         var isuser = new IdentityServerUser(user.Id)
         {
-            DisplayName = user.UserName,
+            DisplayName = user.FullName ?? user.UserName,
             IdentityProvider = provider,
             AdditionalClaims = additionalLocalClaims
         };

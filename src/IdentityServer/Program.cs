@@ -1,6 +1,7 @@
 using IdentityServer;
 using IdentityServer.Configuration;
 using IdentityServer.Database;
+using IdentityServer.Models.Users;
 using IdentityServer.Services;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
@@ -31,12 +32,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     //options.UseSqlite(connectionString, sqlOptions => sqlOptions.MigrationsAssembly(migrationsAssembly));
 });
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
   .AddEntityFrameworkStores<ApplicationDbContext>();
 
 // Register dynamic provider services
 builder.Services.AddScoped<IDynamicProviderService, DynamicProviderService>();
 builder.Services.AddScoped<DynamicAuthenticationSchemeService>();
+
+// Register user management service
+builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 
 // Register dynamic OIDC options configuration
 builder.Services.AddSingleton<IConfigureOptions<OpenIdConnectOptions>, DynamicOidcOptionsConfiguration>();
@@ -57,7 +61,7 @@ builder.Services.AddIdentityServer(options =>
   //  opt => opt.MigrationsAssembly(migrationsAssembly)))
   //.AddOperationalStore(options => options.ConfigureDbContext = b => b.UseSqlite(connectionString,
   //  opt => opt.MigrationsAssembly(migrationsAssembly)))
-  .AddAspNetIdentity<IdentityUser>();
+  .AddAspNetIdentity<ApplicationUser>();
   //.AddTestUsers(Config.Users);
 
 // Configure authentication with support for dynamic providers

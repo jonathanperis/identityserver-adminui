@@ -7,6 +7,7 @@ using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 using Duende.IdentityServer.Stores;
 using Duende.IdentityServer.Test;
+using IdentityServer.Models.Users;
 using IdentityServer.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -22,10 +23,11 @@ public class Index : PageModel
 {
     private readonly IIdentityServerInteractionService _interaction;
     private readonly IEventService _events;
-    private readonly SignInManager<IdentityUser> _signInManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IAuthenticationSchemeProvider _schemeProvider;
     private readonly IIdentityProviderStore _identityProviderStore;
     private readonly DynamicAuthenticationSchemeService _dynamicSchemeService;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public ViewModel View { get; set; } = default!;
 
@@ -37,7 +39,8 @@ public class Index : PageModel
         IAuthenticationSchemeProvider schemeProvider,
         IIdentityProviderStore identityProviderStore,
         IEventService events,
-        SignInManager<IdentityUser> signInManager,
+        SignInManager<ApplicationUser> signInManager,
+        UserManager<ApplicationUser> userManager,
         DynamicAuthenticationSchemeService dynamicSchemeService)
     {           
         _interaction = interaction;
@@ -45,6 +48,7 @@ public class Index : PageModel
         _identityProviderStore = identityProviderStore;
         _events = events;
         _signInManager = signInManager;
+        _userManager = userManager;
         _dynamicSchemeService = dynamicSchemeService;
     }
 
@@ -103,6 +107,10 @@ public class Index : PageModel
             // validate username/password against in-memory store
             if (user != null && (await _signInManager.CheckPasswordSignInAsync(user, Input.Password, false)) == Microsoft.AspNetCore.Identity.SignInResult.Success)
             {
+                // Update last login timestamp
+                user.LastLoginAt = DateTime.UtcNow;
+                await _userManager.UpdateAsync(user);
+
                 await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id, user.UserName, clientId: context?.Client.ClientId));
                 Telemetry.Metrics.UserLogin(context?.Client.ClientId, IdentityServerConstants.LocalIdentityProvider);
 
@@ -118,7 +126,7 @@ public class Index : PageModel
                 // issue authentication cookie with subject ID and username
                 var isuser = new IdentityServerUser(user.Id)
                 {
-                    DisplayName = user.UserName
+                    DisplayName = user.FullName ?? user.UserName
                 };
 
                 await HttpContext.SignInAsync(isuser, props);
