@@ -69,9 +69,11 @@ docker run --name postgres-db -e POSTGRES_PASSWORD=admin -p 5432:5432 -d postgre
 
 This command will:
 - Create a container named `postgres-db`
-- Set the password to `admin`
+- Set the password to `admin` (for local development only)
 - Expose PostgreSQL on port `5432`
 - Run the container in detached mode
+
+> **Security Note**: The password `admin` is used for local development only. For production environments, use strong passwords and secure credential management.
 
 **Alternative: Using SQLite for Quick Testing**
 
@@ -263,6 +265,8 @@ The main configuration is in `src/IdentityServer/appsettings.json`:
   }
 }
 ```
+
+> **Note**: The example uses `Password=admin` for local development. In production, use strong passwords and store credentials securely using environment variables or secret management tools.
 
 Key configuration points:
 - **ConnectionStrings:DefaultConnection**: Database connection string
