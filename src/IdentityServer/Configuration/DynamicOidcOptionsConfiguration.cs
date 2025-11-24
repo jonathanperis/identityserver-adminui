@@ -34,7 +34,14 @@ public class DynamicOidcOptionsConfiguration : IConfigureNamedOptions<OpenIdConn
 
         if (provider == null)
         {
-            _logger.LogWarning("OIDC provider {Scheme} not found in database", name);
+            _logger.LogWarning("OIDC provider {Scheme} not found in database, using placeholder configuration", name);
+            // Provide placeholder values to satisfy OpenIdConnect validation requirements
+            // This prevents ArgumentException when the scheme is registered but not yet configured
+            options.Authority = "https://placeholder.example.com";
+            options.ClientId = "placeholder-client-id";
+            options.ClientSecret = "placeholder-client-secret";
+            options.ResponseType = "code";
+            options.SignInScheme = "Identity.Application";
             return;
         }
 
