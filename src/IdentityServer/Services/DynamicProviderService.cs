@@ -20,7 +20,9 @@ public class DynamicProviderService : IDynamicProviderService
 
     public async Task<IEnumerable<OidcProvider>> GetAllOidcProvidersAsync()
     {
-        return await _context.OidcProviders.ToListAsync();
+        return await _context.OidcProviders
+            .AsNoTracking()
+            .ToListAsync();
     }
 
     public async Task<OidcProvider?> GetOidcProviderAsync(int id)
@@ -31,6 +33,7 @@ public class DynamicProviderService : IDynamicProviderService
     public async Task<OidcProvider?> GetOidcProviderBySchemeAsync(string scheme)
     {
         return await _context.OidcProviders
+            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Scheme == scheme);
     }
 
@@ -52,13 +55,16 @@ public class DynamicProviderService : IDynamicProviderService
 
     public async Task DeleteOidcProviderAsync(int id)
     {
-        var provider = await _context.OidcProviders.FindAsync(id);
-        if (provider != null)
+        // Use ExecuteDelete for better performance (EF Core 7.0+)
+        var rowsAffected = await _context.OidcProviders
+            .Where(p => p.Id == id)
+            .ExecuteDeleteAsync();
+
+        // Note: In production, consider checking if provider is actively used
+        // before deletion to prevent breaking active authentication flows
+        if (rowsAffected == 0)
         {
-            // Note: In production, consider checking if provider is actively used
-            // before deletion to prevent breaking active authentication flows
-            _context.OidcProviders.Remove(provider);
-            await _context.SaveChangesAsync();
+            throw new InvalidOperationException($"OIDC provider with ID {id} not found");
         }
     }
 
@@ -68,7 +74,9 @@ public class DynamicProviderService : IDynamicProviderService
 
     public async Task<IEnumerable<SamlProvider>> GetAllSamlProvidersAsync()
     {
-        return await _context.SamlProviders.ToListAsync();
+        return await _context.SamlProviders
+            .AsNoTracking()
+            .ToListAsync();
     }
 
     public async Task<SamlProvider?> GetSamlProviderAsync(int id)
@@ -79,6 +87,7 @@ public class DynamicProviderService : IDynamicProviderService
     public async Task<SamlProvider?> GetSamlProviderBySchemeAsync(string scheme)
     {
         return await _context.SamlProviders
+            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Scheme == scheme);
     }
 
@@ -100,13 +109,16 @@ public class DynamicProviderService : IDynamicProviderService
 
     public async Task DeleteSamlProviderAsync(int id)
     {
-        var provider = await _context.SamlProviders.FindAsync(id);
-        if (provider != null)
+        // Use ExecuteDelete for better performance (EF Core 7.0+)
+        var rowsAffected = await _context.SamlProviders
+            .Where(p => p.Id == id)
+            .ExecuteDeleteAsync();
+
+        // Note: In production, consider checking if provider is actively used
+        // before deletion to prevent breaking active authentication flows
+        if (rowsAffected == 0)
         {
-            // Note: In production, consider checking if provider is actively used
-            // before deletion to prevent breaking active authentication flows
-            _context.SamlProviders.Remove(provider);
-            await _context.SaveChangesAsync();
+            throw new InvalidOperationException($"SAML provider with ID {id} not found");
         }
     }
 
@@ -116,16 +128,21 @@ public class DynamicProviderService : IDynamicProviderService
 
     public async Task<IEnumerable<DynamicProvider>> GetAllEnabledProvidersAsync()
     {
-        var oidcProviders = await _context.OidcProviders
+        // Use parallel queries for better performance
+        var oidcTask = _context.OidcProviders
+            .AsNoTracking()
             .Where(p => p.Enabled)
             .ToListAsync();
 
-        var samlProviders = await _context.SamlProviders
+        var samlTask = _context.SamlProviders
+            .AsNoTracking()
             .Where(p => p.Enabled)
             .ToListAsync();
 
-        return oidcProviders.Cast<DynamicProvider>()
-            .Concat(samlProviders.Cast<DynamicProvider>())
+        await Task.WhenAll(oidcTask, samlTask);
+
+        return oidcTask.Result.Cast<DynamicProvider>()
+            .Concat(samlTask.Result.Cast<DynamicProvider>())
             .OrderBy(p => p.DisplayName);
     }
 

@@ -112,10 +112,15 @@ public class DynamicProvidersController : ControllerBase
                 return NotFound();
             }
 
+            var scheme = provider.Scheme; // Cache scheme before deletion
             await _providerService.DeleteOidcProviderAsync(id);
-            _schemeService.ClearOptionsCache(provider.Scheme);
-            _logger.LogInformation("Deleted OIDC provider {Scheme}", provider.Scheme);
+            _schemeService.ClearOptionsCache(scheme);
+            _logger.LogInformation("Deleted OIDC provider {Scheme}", scheme);
             return NoContent();
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
         }
         catch (Exception ex)
         {
@@ -194,9 +199,14 @@ public class DynamicProvidersController : ControllerBase
                 return NotFound();
             }
 
+            var scheme = provider.Scheme; // Cache scheme before deletion
             await _providerService.DeleteSamlProviderAsync(id);
-            _logger.LogInformation("Deleted SAML provider {Scheme}", provider.Scheme);
+            _logger.LogInformation("Deleted SAML provider {Scheme}", scheme);
             return NoContent();
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
         }
         catch (Exception ex)
         {
