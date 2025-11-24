@@ -2,6 +2,7 @@
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Duende.IdentityServer.EntityFramework.Mappers;
 using Duende.IdentityServer.Models;
+using IdentityServer.Models.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -106,15 +107,28 @@ public class SeedData
 
     private static void EnsureUsers(IServiceScope scope)
     {
-        var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var alice = userMgr.FindByNameAsync("alice").Result;
         if (alice == null)
         {
-            alice = new IdentityUser
+            alice = new ApplicationUser
             {
                 UserName = "alice",
                 Email = "AliceSmith@email.com",
                 EmailConfirmed = true,
+                FirstName = "Alice",
+                LastName = "Smith",
+                DateOfBirth = new DateTime(1985, 3, 15),
+                City = "Wonderland",
+                State = "Fantasy",
+                Country = "Storybook",
+                Company = "Adventure Corp",
+                JobTitle = "Explorer",
+                Department = "Discovery",
+                PreferredLanguage = "en",
+                TimeZone = "UTC",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
             };
             var result = userMgr.CreateAsync(alice, "Pass123$").Result;
             if (!result.Succeeded)
@@ -144,11 +158,24 @@ public class SeedData
         var bob = userMgr.FindByNameAsync("bob").Result;
         if (bob == null)
         {
-            bob = new IdentityUser
+            bob = new ApplicationUser
             {
                 UserName = "bob",
                 Email = "BobSmith@email.com",
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                FirstName = "Bob",
+                LastName = "Smith",
+                DateOfBirth = new DateTime(1990, 7, 22),
+                City = "Springfield",
+                State = "IL",
+                Country = "USA",
+                Company = "Tech Solutions Inc",
+                JobTitle = "Developer",
+                Department = "Engineering",
+                PreferredLanguage = "en",
+                TimeZone = "America/Chicago",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
             };
             var result = userMgr.CreateAsync(bob, "Pass123$").Result;
             if (!result.Succeeded)

@@ -1,7 +1,12 @@
 using IdentityServer;
+using IdentityServer.Configuration;
 using IdentityServer.Database;
+using IdentityServer.Models.Users;
+using IdentityServer.Services;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
@@ -19,6 +24,7 @@ var connectionString = configuration.GetConnectionString("DefaultConnection");
 var migrationsAssembly = typeof(Config).Assembly.GetName().Name;
 
 builder.Services.AddRazorPages();
+builder.Services.AddControllers();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -26,8 +32,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     //options.UseSqlite(connectionString, sqlOptions => sqlOptions.MigrationsAssembly(migrationsAssembly));
 });
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
   .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Register dynamic provider services
+builder.Services.AddScoped<IDynamicProviderService, DynamicProviderService>();
+builder.Services.AddScoped<DynamicAuthenticationSchemeService>();
+
+// Register user management service
+builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+
+// Register dynamic OIDC options configuration
+builder.Services.AddSingleton<IConfigureOptions<OpenIdConnectOptions>, DynamicOidcOptionsConfiguration>();
 
 builder.Services.AddIdentityServer(options =>
 {
@@ -45,10 +61,16 @@ builder.Services.AddIdentityServer(options =>
   //  opt => opt.MigrationsAssembly(migrationsAssembly)))
   //.AddOperationalStore(options => options.ConfigureDbContext = b => b.UseSqlite(connectionString,
   //  opt => opt.MigrationsAssembly(migrationsAssembly)))
-  .AddAspNetIdentity<IdentityUser>();
+  .AddAspNetIdentity<ApplicationUser>();
   //.AddTestUsers(Config.Users);
 
-builder.Services.AddAuthentication();
+// Configure authentication with support for dynamic providers
+var authBuilder = builder.Services.AddAuthentication();
+
+// Dynamic OIDC providers will be registered on-demand through DynamicOidcOptionsConfiguration
+// This is a placeholder registration that enables the OpenIdConnect authentication handler
+// The actual configuration for each scheme comes from the database
+authBuilder.AddOpenIdConnect("dynamic-oidc", options => { });
 
 builder.Services.AddSerilog((ctx, lc) =>
 {
@@ -67,14 +89,25 @@ app.UseIdentityServer();
 
 app.UseStaticFiles();
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages().RequireAuthorization();
+app.MapControllers();
 
 if (args.Contains("/seed"))
 {
     Log.Information("Seeding database ...");
     SeedData.EnsureSeedData(app);
-    Log.Information("Done seeding database. Exiting.");
+    Log.Information("Done seeding database.");
+    
+    if (args.Contains("/seedproviders"))
+    {
+        Log.Information("Seeding dynamic providers ...");
+        DynamicProviderSeedData.EnsureSeedData(app);
+        Log.Information("Done seeding dynamic providers.");
+    }
+    
+    Log.Information("Exiting.");
     return;
 }
 
