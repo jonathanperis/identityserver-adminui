@@ -64,7 +64,7 @@ src/
 The project uses PostgreSQL by default. You can run PostgreSQL using Docker:
 
 ```bash
-docker run --name postgres-db -e POSTGRES_PASSWORD=admin -p 5432:5432 -d postgres:latest
+docker run --name postgres-db -e POSTGRES_PASSWORD=admin -p 5432:5432 -d postgres:16
 ```
 
 This command will:
@@ -72,6 +72,7 @@ This command will:
 - Set the password to `admin` (for local development only)
 - Expose PostgreSQL on port `5432`
 - Run the container in detached mode
+- Use PostgreSQL version 16 (pinned for consistency)
 
 > **Security Note**: The password `admin` is used for local development only. For production environments, use strong passwords and secure credential management.
 
@@ -364,8 +365,7 @@ docker restart postgres-db
 ### Build Errors
 
 ```bash
-# Clean and rebuild
-cd /home/runner/work/identityserver-adminui/identityserver-adminui
+# Clean and rebuild from solution root
 dotnet clean
 dotnet restore
 dotnet build
