@@ -64,7 +64,8 @@ builder.Services.AddIdentityServer(options =>
 var authBuilder = builder.Services.AddAuthentication();
 
 // Dynamic OIDC providers will be registered on-demand through DynamicOidcOptionsConfiguration
-// We need to register OpenIdConnect authentication scheme factory
+// This is a placeholder registration that enables the OpenIdConnect authentication handler
+// The actual configuration for each scheme comes from the database
 authBuilder.AddOpenIdConnect("dynamic-oidc", options => { });
 
 builder.Services.AddSerilog((ctx, lc) =>

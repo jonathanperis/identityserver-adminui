@@ -50,6 +50,22 @@ public class DynamicProvidersController : ControllerBase
     [HttpPost("oidc")]
     public async Task<ActionResult<OidcProvider>> CreateOidcProvider(OidcProvider provider)
     {
+        // Validate input
+        if (string.IsNullOrWhiteSpace(provider.Scheme))
+        {
+            return BadRequest(new { error = "Scheme is required" });
+        }
+        
+        if (string.IsNullOrWhiteSpace(provider.Authority))
+        {
+            return BadRequest(new { error = "Authority is required" });
+        }
+        
+        if (string.IsNullOrWhiteSpace(provider.ClientId))
+        {
+            return BadRequest(new { error = "ClientId is required" });
+        }
+
         try
         {
             var created = await _providerService.CreateOidcProviderAsync(provider);

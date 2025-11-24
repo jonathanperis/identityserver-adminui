@@ -28,6 +28,8 @@ public class OidcProvider : DynamicProvider
     
     /// <summary>
     /// Client Secret for the application
+    /// WARNING: In production, encrypt this field before storing in database
+    /// Consider using ASP.NET Core Data Protection API or Azure Key Vault
     /// </summary>
     [StringLength(500)]
     public string? ClientSecret { get; set; }

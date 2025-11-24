@@ -242,9 +242,24 @@ The SAML provider model is included but requires additional implementation:
 
 1. **API Authentication**: All management endpoints require authentication
 2. **HTTPS**: Always use HTTPS in production
-3. **Secret Storage**: Consider encrypting client secrets in database
+3. **Secret Storage**: 
+   - ⚠️ **IMPORTANT**: Client secrets and certificates are stored in plain text by default
+   - For production, implement encryption using ASP.NET Core Data Protection API
+   - Or use Azure Key Vault / AWS Secrets Manager for secret storage
+   - Example implementation:
+     ```csharp
+     // Encrypt before saving
+     var protector = dataProtectionProvider.CreateProtector("DynamicProviders");
+     provider.ClientSecret = protector.Protect(clientSecret);
+     
+     // Decrypt when loading
+     var decryptedSecret = protector.Unprotect(provider.ClientSecret);
+     ```
 4. **Input Validation**: API validates all provider configurations
 5. **Audit Logging**: Consider adding audit trail for provider changes
+6. **Performance**: Configuration uses synchronous database calls (IConfigureNamedOptions limitation)
+   - This is acceptable for infrequent authentication requests
+   - Consider caching if you have high-frequency authentication needs
 
 ## Troubleshooting
 

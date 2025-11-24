@@ -52,11 +52,13 @@ public class SamlProvider : DynamicProvider
     
     /// <summary>
     /// Service Provider certificate (Base64 encoded PFX)
+    /// WARNING: In production, encrypt this field or use Azure Key Vault
     /// </summary>
     public string? SpCertificate { get; set; }
     
     /// <summary>
     /// Service Provider certificate password
+    /// WARNING: In production, encrypt this field or use Azure Key Vault
     /// </summary>
     [StringLength(200)]
     public string? SpCertificatePassword { get; set; }

@@ -46,11 +46,13 @@ public class Challenge : PageModel
         {
             // Check if this is a custom dynamic OIDC provider
             var oidcProvider = await _dynamicSchemeService.GetOidcProviderConfigurationAsync(scheme);
-            if (oidcProvider != null)
+            if (oidcProvider == null)
             {
-                // The scheme will be configured dynamically via DynamicOidcOptionsConfiguration
-                // when the authentication middleware tries to use it
+                // Provider not found
+                throw new ArgumentException($"Authentication scheme '{scheme}' not found");
             }
+            // The scheme will be configured dynamically via DynamicOidcOptionsConfiguration
+            // when the authentication middleware tries to use it
         }
             
         // start challenge and roundtrip the return URL and scheme 

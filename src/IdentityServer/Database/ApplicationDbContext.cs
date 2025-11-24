@@ -18,6 +18,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             entity.ToTable("DynamicOidcProviders");
             entity.HasIndex(e => e.Scheme).IsUnique();
+            entity.HasIndex(e => e.Enabled); // For filtering enabled providers
         });
 
         // Configure SAML Provider
@@ -25,6 +26,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             entity.ToTable("DynamicSamlProviders");
             entity.HasIndex(e => e.Scheme).IsUnique();
+            entity.HasIndex(e => e.Enabled); // For filtering enabled providers
         });
     }
 }

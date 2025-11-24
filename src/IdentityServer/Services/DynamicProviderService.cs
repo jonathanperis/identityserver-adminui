@@ -55,6 +55,8 @@ public class DynamicProviderService : IDynamicProviderService
         var provider = await _context.OidcProviders.FindAsync(id);
         if (provider != null)
         {
+            // Note: In production, consider checking if provider is actively used
+            // before deletion to prevent breaking active authentication flows
             _context.OidcProviders.Remove(provider);
             await _context.SaveChangesAsync();
         }
@@ -101,6 +103,8 @@ public class DynamicProviderService : IDynamicProviderService
         var provider = await _context.SamlProviders.FindAsync(id);
         if (provider != null)
         {
+            // Note: In production, consider checking if provider is actively used
+            // before deletion to prevent breaking active authentication flows
             _context.SamlProviders.Remove(provider);
             await _context.SaveChangesAsync();
         }
